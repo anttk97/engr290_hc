@@ -116,8 +116,31 @@ void control_script() {
 Lift fan is connected to the "throttle" channel (PWM2).
 Servo (PWM0) controls the "propulsion" fan, which is connected to Up/Down channel (PWM1).
 */
+uint8_t dir = 0;
+startup();
+uint8_t distToWall = ADC_data.ADC3
+for(int16_t i=500; i>0; i--){
+  if(ADC_data.ADC3 < distToWall - DELTA){//check if there is a wall
+    if(dir = 0){
+      straight_Up();
+      DELAY_ms(400);
+    } else {
+      straight_Down();
+      DELAY_ms(400);
+    }
+  } else if(ADC_data.ADC3 > distToWall + DELTA){//check if there is no wall
+      if(dir > 0) {
+        right();
+        DELAY_ms(200);
+        dir = 0;
+      } else {
+        right();
+        DELAY_ms(200);
+        dir = 1;
+      }
+  }
 
-
+}
   //control here
   
   flags.stop=1; //this must be the very last command in your script. It will ground the hovercraft.
@@ -129,6 +152,7 @@ Servo (PWM0) controls the "propulsion" fan, which is connected to Up/Down channe
  * ***Can maybe also just reverse into wall at first to make sure hovercraft is well positioned and not at an angle***
  */
 void startup() {
+  
   OCR0A=16; // initially slow (~5%)
   for (int i = 0; i < 5; i++) {
     DELAY_ms(75);
@@ -145,7 +169,11 @@ void startup() {
  *  This function sets servo to no angle and applies full output to the thrust fan
  */
 void straight_Up() {
-  OCR1A=Servo_angle[255]; //servo at the middle???
+  OCR1B=D1B(1);           //minimum speed for thrust fan 
+  DELAY_ms(50);
+  uint8_t a = 0;
+  OCR1A=Servo_angle[a];
+  DELAY_ms(50);           //servo at the middle???
   OCR1B=D1B(256);         //full speed for thrust fan 
 }
 
@@ -155,7 +183,9 @@ void straight_Up() {
 void right() {
   OCR1B=D1B(1);           //minimum speed for thrust fan 
   DELAY_ms(50);
-  OCR1A=Servo_angle[127]; //servo 90 deg. to right ???
+  uint8_t b = 188;
+  OCR1A=Servo_angle[b];
+  DELAY_ms(50);           //servo 90 deg. to right ???
   OCR1B=D1B(256);         //full speed for thrust fan 
 }
 
@@ -163,7 +193,11 @@ void right() {
  * Move downward (opposite dir.)
  */
 void straight_Down() {
-  OCR1A=Servo_angle[0];   //reverse ???
+  OCR1B=D1B(1);           //minimum speed for thrust fan 
+  DELAY_ms(50);
+  uint8_t c = 255;
+  OCR1A=Servo_angle[c];
+  DELAY_ms(50);           //reverse ???
   OCR1B=D1B(256);         //full speed for thrust fan 
 }
 
