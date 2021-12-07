@@ -4,9 +4,10 @@
  * based on v.2.4
  * Created: Sep.4, 2018 1:11:11 PM
  * Modified: March 5, 2019  2:22:22 PM
- * Author: dmitry - modified by ENGR 290 Team 17 - November 2021
+ * Author: dmitry - modified by ENGR 290 team 17 fall 21
  */ 
-
+//#include "init_290.h"
+#include "init_290.c"
 #define F_CPU 16000000UL
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -41,12 +42,12 @@
 // 1.5/5*255
 
 // Threshold for the distance readings variation
-#define DELTA 5
+#define DELTA 3
 
 //***************************************************************************************************************
 //un-comment the line below to enable printing of ADC readings through the serial port
-//#define ADC_DEBUG
-// COM port settings: 2400, 8, ODD, 1, None
+#define ADC_DEBUG 
+//COM port settings: 2400, 8, ODD, 1, None
 // Note 1: for this connection, the flow control must be set to "None".
 // Note 2: Use any terminal software to display the data (e.g. Hyperterminal)
 // Note 3: Arduino IDE must be closed before launching the terminal, 
@@ -72,7 +73,7 @@ static volatile struct {
 } ADC_data; 
 
 #ifdef ADC_DEBUG
-#define PPS 50
+#define PPS 10
 // defines the frequency of printing of ADC readings. 
 // Current value (50) corresponds to one set per second. 
 // If you set it to 10, it will print 5 sets of readings per second.
@@ -81,91 +82,84 @@ static volatile char *msg, data_str[]="   ;   ;   .\r\n";
 static volatile uint8_t TX_delay=PPS; 
 #endif
 
-
-// Values for 16MHz
-const uint16_t Servo_angle [256]  ={ //  +/-90 degrees
-85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85, // 0...15
-108,108,108,108,108,108,108,108,108,108,108,108,108,108,108,108, // 16...31 0.9ms pulse(108) 
-119,119,119,119,119,119,119,119,119,119,119,119,119,119,119,119, // 32...47
-131,131,131,131,131,131,131,131,131,131,131,131,131,131,131,131, // 48...63
-142,142,142,142,142,142,142,142,142,142,142,142,142,142,142,142, // 64...79
-154,154,154,154,154,154,154,154,154,154,154,154,154,154,154,154, // 80...95
-165,165,165,165,165,165,165,165,165,165,165,165,165,165,165,165, // 96...111
-177,177,177,177,177,177,177,177,177,177,177,177,188,188,188,188, // center - 1.5ms pulse (188) 112...127
-188,188,188,188,198,198,198,198,198,198,198,198,198,198,198,198, // 128...143
-208,208,208,208,208,208,208,208,208,208,208,208,208,208,208,208, // 143...159
-218,218,218,218,218,218,218,218,218,218,218,218,218,218,218,218, // 160...175
-228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228, // 175...191
-238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238, // 192...207
-248,248,248,248,248,248,248,248,248,248,248,248,248,248,248,248, // 208...223
-270,270,270,270,270,270,270,270,270,270,270,270,270,270,270,270, // 224...239
-290,290,290,290,290,290,290,290,290,290,290,290,290,290,290,290  // 240...255
-};
-
-
 // Change this number to the ID that was given to you.
-#define Team_NO 0x11 // 17 -> hex = 11
+#define Team_NO 0x11
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //++++++++ Here is the placeholder for your control algorithm ++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void control_script() {
-/*
-----------------------------------------------------------------------------------
-Lift fan is connected to the "throttle" channel (PWM2).
-Servo (PWM0) controls the "propulsion" fan, which is connected to Up/Down channel (PWM1).
-*/
 
+uint8_t WALL_DISTANCE_THRESHOLD = 70;
+gpio_init();                          // init
+adc_init(3,0);                        // init
 
-  //control here
-  
-  flags.stop=1; //this must be the very last command in your script. It will ground the hovercraft.
+PORTD |= 1 << PD7;                    // enable on/off
+PORTB |= 1 << PB0;                    // enable thrust
+
+// forward just about 10s
+for(int16_t i = 0; i < 160; i++) { 
+OCR1A = 55;                           // set servo angle
+
+// if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 130) break;
+
+DELAY_ms(50);
+
+}
+
+// right ~ 4s
+for(int16_t i = 0; i < 70; i++) {
+OCR1A = 177;
+DELAY_ms(50);
+}
+
+//reverse
+for(int16_t i = 0; i < 170; i++){
+OCR1A = 290;
+
+if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 100) break;
+
+DELAY_ms(50);
+
+}
+
+// right ~ 4s
+for(int16_t i = 0; i < 70; i++) {
+OCR1A = 177;
+DELAY_ms(50);
+}
+
+// forward ~ 12s
+for(int16_t i = 0; i < 200; i++) { 
+OCR1A = 55;
+
+if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 100) break;
+
+DELAY_ms(50);
+
+}
+
+// right ~ 5s
+for(int16_t i = 0; i < 70; i++) {
+OCR1A = 177;
+DELAY_ms(50);
+}
+
+//reverse ~ 15s
+for(int16_t i = 0; i < 250; i++){
+OCR1A = 290;
+
+if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 100) break;
+
+DELAY_ms(50);
+
+}
+
+flags.stop=1; //this must be the very last command in your script. It will ground the hovercraft.
+
   return;
 }  // end of control_script()
-
-/*
- * Startup function, increases lift fan output in 5 gradual steps until full power. Might help prevent initial intense torque spinning.
- * ***Can maybe also just reverse into wall at first to make sure hovercraft is well positioned and not at an angle***
- */
-void startup() {
-  OCR0A=16; // initially slow (~5%)
-  for (int i = 0; i < 5; i++) {
-    DELAY_ms(75);
-    if (OCR0A <= 255) { // do not exceed 255 (max speed)
-      OCR0A=OCR0A * 2;    
-    } else {
-      OCR0A=255;
-    }
-  }
-  
-}
-
-/*
- *  This function sets servo to no angle and applies full output to the thrust fan
- */
-void straight_Up() {
-  OCR1A=Servo_angle[255]; //servo at the middle???
-  OCR1B=D1B(256);         //full speed for thrust fan 
-}
-
-/*
- * move to the right
- */
-void right() {
-  OCR1B=D1B(1);           //minimum speed for thrust fan 
-  DELAY_ms(50);
-  OCR1A=Servo_angle[127]; //servo 90 deg. to right ???
-  OCR1B=D1B(256);         //full speed for thrust fan 
-}
-
-/*
- * Move downward (opposite dir.)
- */
-void straight_Down() {
-  OCR1A=Servo_angle[0];   //reverse ???
-  OCR1B=D1B(256);         //full speed for thrust fan 
-}
 
 //====================================================================================|
 //====================================================================================|
@@ -285,7 +279,7 @@ ISR (USART_RX_vect) {
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // >>>>>>> UN-comment the line below to disable remote control commands processing once the "autonomous" mode was turned ON.
-//        if (flags.mode) return;
+        if (flags.mode) return;
 
         if (ctrl[ctrl_count]&0b00100010) flags.mode=1;  
         if (ctrl[ctrl_count]&0b00010001) PORTD|=(1<<PD7); 
@@ -408,7 +402,7 @@ int main(void)
   WDTCSR =(1<<WDE) |(1<<WDP2)|(1<<WDP1); //1 sec delay for WDT
 */
   flags.stop=0;
-  flags.mode=0;
+  flags.mode=1;
   sei(); 
   char tmp_str[3];
   uint8_t *pData;
