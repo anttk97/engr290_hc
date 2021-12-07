@@ -102,7 +102,7 @@ PORTB |= 1 << PB0;                    // enable thrust
 for(int16_t i = 0; i < 160; i++) { 
 OCR1A = 55;                           // set servo angle
 
-// if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 130) break;
+if (ADC_data.ADC3 > WALL_DISTANCE_THRESHOLD && i > 130) break;
 
 DELAY_ms(50);
 
